@@ -53,8 +53,8 @@ namespace TIO_ZAD3
         public double Beta { get; set; }
         public double Q { get; set; }
         public double Fitness { get; set; }
-        public List<City> VisitedCities { get; set; }
-        public List<City> AllowedCities { get; set; }
+        public List<int> VisitedCities { get; set; }
+        public List<int> AllowedCities { get; set; }
         public List<Item> Items { get; set; }
         public List<Edge> Path { get; set; }
 
@@ -68,8 +68,8 @@ namespace TIO_ZAD3
             Graph = graph;
             Beta = beta;
             Q = q;
-            VisitedCities = new List<City>();
-            AllowedCities = new List<City>();
+            VisitedCities = new List<int>();
+            AllowedCities = new List<int>();
             Items = new List<Item>();
             Path = new List<Edge>();
         }
@@ -77,17 +77,17 @@ namespace TIO_ZAD3
         public void Init(City startCity)
         {
             Fitness = 0;
-            VisitedCities.Add(startCity);
-            AllowedCities = Graph.Cities;
-            AllowedCities.Remove(startCity);
+            VisitedCities.Add(startCity.Id);
+            AllowedCities = Graph.Cities.Select(e => e.Id).ToList();
+            AllowedCities.Remove(startCity.Id);
             Path.Clear();
         }
 
-        public City CurrentCity() => VisitedCities.Last();
+        public int CurrentCity() => VisitedCities.Last();
 
         public Edge MoveNext()
         {
-            City endPoint;
+            int endPoint;
             var startPoint = CurrentCity();
 
             if (AllowedCities.Count == 0)
@@ -101,19 +101,19 @@ namespace TIO_ZAD3
                 AllowedCities.Remove(endPoint);
             }
 
-            var edge = Graph.GetEdge(startPoint.Id, endPoint.Id);
+            var edge = Graph.GetEdge(startPoint, endPoint);
             Path.Add(edge);
             return edge;
         }
 
-        private City ChooseNextCity()
+        private int ChooseNextCity()
         {
             List<Edge> edgesWithWeight = new List<Edge>();
             Edge bestEdge = new Edge();
 
             foreach (var node in AllowedCities)
             {
-                var edge = Graph.GetEdge(CurrentCity().Id, node.Id);
+                var edge = Graph.GetEdge(CurrentCity(), node);
                 edge.Weight = edge.Pheromone * Math.Pow(1 / edge.Length, Beta);
 
                 if (edge.Weight > bestEdge.Weight)
@@ -127,7 +127,7 @@ namespace TIO_ZAD3
             var random = Helpers.Rand.NextDouble();
             if (random < Q)
             {
-                return bestEdge.End;
+                return bestEdge.End.Id;
             }
             else
             {
@@ -136,7 +136,7 @@ namespace TIO_ZAD3
                 var cumSum = Helpers.EdgeCumulativeSum(edgeProbabilities);
                 City choosenPoint = Helpers.GetRandomEdge(cumSum);
 
-                return choosenPoint;
+                return choosenPoint.Id;
             }
         }
 

@@ -84,7 +84,7 @@ namespace TIO_ZAD3
             for (int i = 0; i < citiesLen; i++)
             {
                 var city = ant.VisitedCities[i];
-                var cityItems = problem.Cities.FirstOrDefault(e => e.Id == city.Id)?.Items;
+                var cityItems = problem.Cities.FirstOrDefault(e => e.Id == city)?.Items;
                 foreach (Item item in cityItems)
                 {
                     if (weight + item.Weight <= problem.CapacityOfKnapsack)
@@ -96,8 +96,8 @@ namespace TIO_ZAD3
                     }
                 }
                 var velocity = problem.MaxSpeed - weight * (problem.MaxSpeed - problem.MinSpeed) / problem.CapacityOfKnapsack;
-                var nextCityId = i + 1 < citiesLen ? ant.VisitedCities[i+1].Id : ant.VisitedCities[0].Id;
-                travel += useItems ? Math.Ceiling(graph.GetEdge(city.Id, nextCityId).Length / velocity) : graph.GetEdge(city.Id, nextCityId).Length;
+                var nextCityId = i + 1 < citiesLen ? ant.VisitedCities[i+1] : ant.VisitedCities[0];
+                travel += useItems ? Math.Ceiling(graph.GetEdge(city, nextCityId).Length / velocity) : graph.GetEdge(city, nextCityId).Length;
             }
 
             ant.Fitness = useItems ? travel-profit : travel;
