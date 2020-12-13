@@ -10,157 +10,72 @@ namespace TIO_ZAD3
     {
         public Ant BestAnt { get; set; }
         public AntStrategy Strategy { get; set; }
-        public int ProgressCount { get; set; }
+        public List<Ant> Results { get; set; }
 
         public override string ToString()
         {
-            return $"Strategy: {Strategy.ToString()} Fitness: {BestAnt.Fitness} Progress: {ProgressCount}";
+            return $"Strategy: {Strategy.ToString()} Fitness: {BestAnt.Fitness}";
         }
     }
     public static class Algorithm
     {
-
-        public static Result Solve(this AntColony colony, Problem problem)
+        public static Result Solve(this AntColony colony, Problem problem, AntStrategy strategy)
         {
-            problem.SetupPheromones();
-            Random rand = new Random();
+            colony.Graph.SetupPheromones(colony.Parameters.InitalPheromoneValue);
             var result = new Result()
             {
-                BestAnt = new Ant(),
-                ProgressCount = 0,
-                Strategy = colony.Strategy
+                Strategy = strategy,
+                Results = new List<Ant>()
             };
-            for(int i = 0; i < colony.Generations; i++)
+            for (int i = 0; i < colony.Parameters.Generations; i++)
             {
                 var ants = new List<Ant>();
-                for (int j = 0; j < colony.AntCount; j++)
+
+                for (int j = 0; j < colony.Parameters.AntCount; j++)
                 {
-                    var ant = new Ant(problem.Cities[rand.Next(problem.Cities.Count)]);
-                    ant.Setup(problem);
+                    var ant = new Ant(colony.Graph, colony.Parameters.Beta, colony.Parameters.Q);
+                    ant.Init(colony.Graph.Cities[Helpers.Rand.Next(0, colony.Graph.Dimensions)]);
                     ants.Add(ant);
                 }
 
-                foreach (Ant ant in ants)
+                result.BestAnt ??= ants[0];
+                for (int j = 0; j < colony.Graph.Dimensions; j++)
                 {
-                    for (int j = 0; j < problem.Cities.Count-1; j++)
+                    foreach (var ant in ants)
                     {
-                        ant.SelectNext(colony, problem);
+                        var edge = ant.MoveNext();
+                        double evaporate = (1 - colony.Parameters.LocalEvaporationRate);
+                        colony.Graph.DeletePheromone(edge, evaporate);
+
+                        double deposit = colony.Parameters.LocalEvaporationRate * colony.Parameters.InitalPheromoneValue;
+                        colony.Graph.AddPheromone(edge, deposit);
                     }
-                    ant.CalculateFitness(problem, false);
-                    if (ant.Fitness < result.BestAnt.Fitness)
-                    {
-                        result.BestAnt = ant;
-                        result.ProgressCount++;
-                    }
-                    ant.UpdatePheromoneDelta(colony, problem);
                 }
-                problem.UpdatePheromones(ants, colony);
+
+                ants.ForEach(a => a.CalculateFitness(problem, colony.Graph, strategy == AntStrategy.TTP));
+
+                double deltaR = 1 / result.BestAnt.Fitness;
+                foreach (Edge edge in result.BestAnt.Path)
+                {
+                    double evaporate = (1 - colony.Parameters.GlobalEvaporationRate);
+                    colony.Graph.DeletePheromone(edge, evaporate);
+
+                    double deposit = colony.Parameters.GlobalEvaporationRate * deltaR;
+                    colony.Graph.AddPheromone(edge, deposit);
+                }
+                var bestIterationAnt = ants.OrderByDescending(x => x.Fitness).Last();
+                if (bestIterationAnt.Compare(result.BestAnt, strategy))
+                {
+                    result.BestAnt = bestIterationAnt;
+                    result.Results.Add(bestIterationAnt);
+                    Console.WriteLine("Current Global Best: " + result.BestAnt.Fitness + " found in " + i + " iteration");
+                }
             }
+
             return result;
         }
 
-        public static void UpdatePheromones(this Problem problem, List<Ant> ants, AntColony colony)
-        {
-            var matrixSize = problem.CostMatrixEtas.GetLength(0);
-            for (int i = 0; i < matrixSize; i++)
-            {
-                for (int j = 0; j < matrixSize; j++)
-                {
-                    problem.Pheromones[i, j] *= colony.Rho;
-                    foreach (Ant ant in ants)
-                    {
-                        problem.Pheromones[i, j] += ant.PheromoneDelta[i, j];
-                    }
-                }
-            }
-        }
-
-        public static void SelectNext(this Ant ant, AntColony colony, Problem problem)
-        {
-            var denominator = 0.0;
-            // foreach(int city in ant.AllowedCities)
-            // {
-            //     var cityPheromones = problem.Pheromones[ant.CurrentCity, city];
-            //     var eta = problem.CostMatrixEtas[ant.CurrentCity, city];
-            //     denominator += Math.Pow(cityPheromones, colony.Alpha) * Math.Pow(eta, colony.Beta);
-            // }
-            denominator = 1;
-
-            var probabilities = new Dictionary<int, double>();
-            foreach(int city in ant.AllowedCities)
-            {
-                var cityPheromones = problem.Pheromones[ant.CurrentCity, city];
-                var eta = problem.CostMatrixEtas[ant.CurrentCity, city];
-                var value = Math.Pow(cityPheromones, colony.Alpha) * Math.Pow(eta, colony.Beta) / denominator;
-                probabilities.Add(city, value);
-            }
-            var selectedCity = ant.AllowedCities.FirstOrDefault(e => e == SelectionRoulette(probabilities));
-            ant.AllowedCities.Remove(selectedCity);
-            ant.VisitedCities.Add(selectedCity);
-        }
-
-        private static int SelectionRoulette(Dictionary<int, double> probabilities)
-        {
-            Random rand = new Random();
-            // var sumProp = probabilities.Sum(e => e.Value);
-            // var percentages = probabilities.Select(e => new
-            //     {
-            //         City = e.Key,
-            //         Value = e.Value / sumProp
-            //     }
-            // ).OrderByDescending(e => e.Value);
-            // var random = rand.NextDouble();
-            // var tmpSum = 0.0;
-            // foreach (var percentage in percentages)
-            // {
-            //     tmpSum += percentage.Value;
-            //     if (random < tmpSum)
-            //     {
-            //         selectedCity = percentage.City;
-            //         break;
-            //     }
-            // }
-
-            var random = rand.NextDouble();
-            foreach (var keyValuePair in probabilities)
-            {
-                random -= keyValuePair.Value;
-                if (random <= 0)
-                    return keyValuePair.Key;
-            }
-
-            return 0;
-        }
-
-        public static void UpdatePheromoneDelta(this Ant ant, AntColony colony, Problem problem)
-        {
-            ant.PheromoneDelta = new double[problem.Cities.Count, problem.Cities.Count];
-            for (int i = 0; i<ant.VisitedCities.Count-1; i++)
-            {
-                var currCity = ant.VisitedCities[i];
-                var nextCity = ant.VisitedCities[i + 1];
-                switch (colony.Strategy)
-                {
-                    case AntStrategy.AntQuality:
-                        ant.PheromoneDelta[currCity, nextCity] = colony.Q;
-                        break;
-                    case AntStrategy.AntDensity:
-                        ant.PheromoneDelta[currCity, nextCity] = colony.Q / problem.CostMatrix[currCity, nextCity];
-                        break;
-                    case AntStrategy.AntCycle:
-                        ant.PheromoneDelta[currCity, nextCity] = colony.Q / ant.Fitness;
-                        break;
-                }
-            }
-        }
-
-        public static void Setup(this Ant ant, Problem problem)
-        {
-            ant.AllowedCities = problem.Cities.Select(e => e.Id).ToList();
-            ant.AllowedCities.Remove(ant.CurrentCity);
-        }
-
-        public static void CalculateFitness(this Ant ant, Problem problem, bool useItems = true)
+        public static void CalculateFitness(this Ant ant, Problem problem, Graph graph, bool useItems = false)
         {
             int profit = 0;
             int weight = 0;
@@ -169,7 +84,7 @@ namespace TIO_ZAD3
             for (int i = 0; i < citiesLen; i++)
             {
                 var city = ant.VisitedCities[i];
-                var cityItems = problem.Cities.FirstOrDefault(e => e.Id == city)?.Items;
+                var cityItems = problem.Cities.FirstOrDefault(e => e.Id == city.Id)?.Items;
                 foreach (Item item in cityItems)
                 {
                     if (weight + item.Weight <= problem.CapacityOfKnapsack)
@@ -181,11 +96,11 @@ namespace TIO_ZAD3
                     }
                 }
                 var velocity = problem.MaxSpeed - weight * (problem.MaxSpeed - problem.MinSpeed) / problem.CapacityOfKnapsack;
-                var nextCityId = i + 1 < citiesLen ? i + 1 : 0;
-                travel += useItems ? Math.Ceiling(problem.CostMatrix[city, nextCityId] / velocity) : problem.CostMatrix[city, nextCityId]; 
+                var nextCityId = i + 1 < citiesLen ? ant.VisitedCities[i+1].Id : ant.VisitedCities[0].Id;
+                travel += useItems ? Math.Ceiling(graph.GetEdge(city.Id, nextCityId).Length / velocity) : graph.GetEdge(city.Id, nextCityId).Length;
             }
 
-            ant.Fitness = useItems ? profit-travel : travel;
+            ant.Fitness = useItems ? travel-profit : travel;
         }
     }
 

@@ -13,9 +13,6 @@ namespace TIO_ZAD3
         public double MinSpeed { get; set; }
         public double MaxSpeed { get; set; }
         public List<City> Cities { get; set; } = new List<City>();
-        public double[,] CostMatrix { get; set; }
-        public double [,] CostMatrixEtas { get; set; }
-        public double[,] Pheromones { get; set; }
     }
 
     public class City
