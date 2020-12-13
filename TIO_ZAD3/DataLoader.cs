@@ -26,7 +26,7 @@ namespace TIO_ZAD3
                 var parameters = lines[++index].SplitByT();
                 var city = new City()
                 {
-                    Id = int.Parse(parameters[0]),
+                    Id = int.Parse(parameters[0])-1,
                     CordX = double.Parse(parameters[1]),
                     CordY = double.Parse(parameters[2])
                 };
@@ -38,15 +38,20 @@ namespace TIO_ZAD3
                 var parameters = lines[++index].SplitByT();
                 var item = new Item()
                 {
-                    Id = int.Parse(parameters[0]),
+                    Id = int.Parse(parameters[0])-1,
                     Profit = int.Parse(parameters[1]),
                     Weight = int.Parse(parameters[2]),
-                    CityId = int.Parse(parameters[3])
+                    CityId = int.Parse(parameters[3]) -1
                 };
-                var assignedCity = cities.FirstOrDefault(c => c.Id == item.Id);
+                var assignedCity = cities.FirstOrDefault(c => c.Id == item.CityId);
                 item.City = assignedCity;
                 assignedCity.Items.Add(item);
             }
+
+            cities.ForEach(city =>
+            {
+                city.Items = city.Items.OrderByDescending(e => e.Profit).ToList();
+            });
 
             problem.Cities = cities;
 

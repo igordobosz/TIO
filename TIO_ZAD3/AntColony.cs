@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using Microsoft.VisualBasic;
 
@@ -36,32 +37,21 @@ namespace TIO_ZAD3
     {
         public double Fitness { get; set; }
         public double[,] PheromoneDelta { get; set; }
-        public List<City> VisitedCities { get; set; }
+        public List<int> VisitedCities { get; set; }
         public List<Item> Items { get; set; }
+        public int CurrentCity => VisitedCities.Last();
 
-        public Ant()
+        public List<int> AllowedCities { get; set; }
+
+        public Ant(City startCity = null)
         {
-            VisitedCities = new List<City>();
+            VisitedCities = new List<int>();
             Items = new List<Item>();
-            Fitness = 0;
-        }
-
-        public void CalculateFitness(Problem problem)
-        {
-            int profit = 0;
-            int weight = 0;
-            double travel = 0;
-            var citiesLen = VisitedCities.Count;
-            for (int i = 0; i < citiesLen; i++)
+            Fitness = double.MaxValue;
+            if (startCity != null)
             {
-                profit += Items[i].Profit;
-                weight += Items[i].Weight;
-                var velocity = problem.MaxSpeed - weight * (problem.MaxSpeed - problem.MinSpeed) / problem.CapacityOfKnapsack;
-                var nextCityId = i + 1 < citiesLen ? i + i : 0;
-                travel += Math.Ceiling(problem.CostMatrix[i,nextCityId]/velocity);
+                VisitedCities.Add(startCity.Id);
             }
-
-            Fitness = profit - travel;
         }
     }
 }
