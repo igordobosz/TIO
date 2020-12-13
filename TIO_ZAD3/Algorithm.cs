@@ -10,12 +10,20 @@ namespace TIO_ZAD3
     {
         public Ant BestAnt { get; set; }
         public AntStrategy Strategy { get; set; }
-        public List<Ant> Results { get; set; }
+        public List<ResultLine> Results { get; set; }
 
         public override string ToString()
         {
             return $"Strategy: {Strategy.ToString()} Fitness: {BestAnt.Fitness}";
         }
+    }
+
+    public class ResultLine
+    {
+        public int Index { get; set; }
+        public double Best { get; set; }
+        public double Worst { get; set; }
+        public double Average { get; set; }
     }
     public static class Algorithm
     {
@@ -25,7 +33,7 @@ namespace TIO_ZAD3
             var result = new Result()
             {
                 Strategy = strategy,
-                Results = new List<Ant>()
+                Results = new List<ResultLine>()
             };
             for (int i = 0; i < colony.Parameters.Generations; i++)
             {
@@ -63,11 +71,17 @@ namespace TIO_ZAD3
                     double deposit = colony.Parameters.GlobalEvaporationRate * deltaR;
                     colony.Graph.AddPheromone(edge, deposit);
                 }
-                var bestIterationAnt = ants.OrderByDescending(x => x.Fitness).Last();
-                if (bestIterationAnt.Compare(result.BestAnt, strategy))
+                var sortedAnts = ants.OrderByDescending(x => x.Fitness);
+                result.Results.Add(new ResultLine()
                 {
-                    result.BestAnt = bestIterationAnt;
-                    result.Results.Add(bestIterationAnt);
+                    Average = ants.Average(e => e.Fitness),
+                    Best = result.BestAnt.Fitness,
+                    Index = i,
+                    Worst = sortedAnts.First().Fitness
+                });
+                if (sortedAnts.Last().Compare(result.BestAnt, strategy))
+                {
+                    result.BestAnt = sortedAnts.Last();
                     Console.WriteLine("Current Global Best: " + result.BestAnt.Fitness + " found in " + i + " iteration");
                 }
             }

@@ -50,7 +50,7 @@ def selectionTour(thieves, tour):
     if tour==1:
         return thieves
     elif tour == thieves.__len__():
-        thieves.sort(key=lambda  thief: thief.fitness, reverse=True)
+        thieves.sort(key=lambda  thief: thief.fitness, reverse=False)
         for i in range (thieves.__len__()):
             ans.append(thieves[0])
         return ans
@@ -59,7 +59,7 @@ def selectionTour(thieves, tour):
         for i in range (tour):
             rand = random.randrange(0, thieves.__len__())
             tour_arr.append(thieves[rand])
-        tour_arr.sort(key=lambda  thief: thief.fitness, reverse=True)
+        tour_arr.sort(key=lambda  thief: thief.fitness, reverse=False)
         ans.append(tour_arr[0])
     return ans
 

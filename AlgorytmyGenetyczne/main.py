@@ -76,7 +76,7 @@ class Algorithm():
             date = datetime.now()
             # f = open("stats/{}_{}_{}_{}_{}.csv".format(self.file_name,self.selection ,self.gen, date.strftime("%Y-%m-%d"), date.strftime("%H-%M-%S")), "w")
             # f = open("stats/{}_{}_{}_{}_{}_{}_{}_{}.csv".format(self.file_name,self.selection ,self.gen, self.tour, self.px*100, self.pm*100, self.pop, self.gen), "w")
-            f = open("stats/{}_{}_{}_{}_{}_{}_{}_{}_{}.csv".format(self.file_name,self.selection ,self.gen, self.tour, self.px*100, self.pm*100, self.pop_size, self.crossover, self.mutation), "w")
+            f = open("stats/medium_0_tour_50_5_70.0_50.0_150_2p.csv".format(self.file_name,self.selection ,self.gen, self.tour, self.px*100, self.pm*100, self.pop_size, self.crossover, self.mutation), "w")
             f.write("index, best_thief, avg, worst_thief\n")
             for pop in self.populations:
                 f.write(pop.getCsvString())

@@ -34,5 +34,5 @@ class Thief():
             else:
                 next_city = self.visited_cities[0]
             sumOfTravel += math.ceil(curr_city.getDistanceBtw(next_city)/temp_velocity)
-        self.fitness = sumOfProfit - sumOfTravel
+        self.fitness =  sumOfTravel - sumOfProfit
 
